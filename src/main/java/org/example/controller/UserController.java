@@ -101,7 +101,7 @@ public class UserController {
     }
 
 
-    public static ConcurrentHashMap<String, Boolean> getFriends(String username) {
+    public static ConcurrentHashMap<String, Boolean> getFriends(String username) throws Exception {
         ConcurrentHashMap<String,Boolean> friends = null;
         try {
             session = HibernateUtil.getSessionFactory().openSession();
@@ -116,14 +116,24 @@ public class UserController {
                     .setParameter("username", username)
                     .uniqueResult();
             if (user == null) {
-                return null;
+               throw new Exception("User not found");
             }
             if (user.getFriends() != null ) {
                 friends = (ConcurrentHashMap<String, Boolean>) user.getFriends().stream().collect(Collectors.toConcurrentMap(User::getUsername, User::isActive));
+            }else {
+                friends = new ConcurrentHashMap<>();
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+
+            if (e.getMessage().equals("User not found")) {
+                throw new Exception("User not found");
+            } else {
+                e.printStackTrace();
+            }
+            if (transaction != null) {
+                transaction.rollback();
+            }
         } finally {
             session.close();
         }

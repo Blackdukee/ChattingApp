@@ -92,18 +92,16 @@ public class MessageController {
                 session = HibernateUtil.getSessionFactory().openSession();
                 transaction = session.beginTransaction();
 
-                List<Message> messages = session.createQuery("from Message where sender.id = :sender and recipient.id = :recipient or sender.id = :recipient2 and recipient.id = :sender2", Message.class)
+                List<Message> messages = session.createQuery("from Message where sender.id = :sender and recipient.id = :recipient or sender.id = :recipient and recipient.id = :sender", Message.class)
                         .setParameter("sender", sender)
                         .setParameter("recipient", recipient)
-                        .setParameter("recipient2", sender)
-                        .setParameter("sender2", recipient)
                         .getResultList();
-//                List<Message> messages2 = session.createQuery("from Message where sender.id = :recipient and recipient.id = :sender", Message.class)
-//                        .setParameter("sender", sender)
-//                        .setParameter("recipient", recipient)
-//                        .getResultList();
+                List<Message> messages2 = session.createQuery("from Message where sender.id = :recipient and recipient.id = :sender", Message.class)
+                        .setParameter("sender", sender)
+                        .setParameter("recipient", recipient)
+                        .getResultList();
 
-//                messages.addAll(messages2);
+                messages.addAll(messages2);
 
                 messages.sort((m1, m2) -> m1.getTimestamp().compareTo(m2.getTimestamp()));
 

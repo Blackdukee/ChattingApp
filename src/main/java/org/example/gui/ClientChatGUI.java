@@ -1,6 +1,8 @@
 package org.example.gui;
+import org.example.controller.FriendRequestController;
 import org.example.controller.MessageController;
 import org.example.controller.UserController;
+import org.example.models.FriendRequest;
 import org.example.models.Message;
 import org.example.models.User;
 
@@ -17,9 +19,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.Date;
+import java.util.*;
 import java.util.List;
-import java.util.Scanner;
 
 public class ClientChatGUI extends JFrame implements MessageListener {
 
@@ -34,18 +35,28 @@ public class ClientChatGUI extends JFrame implements MessageListener {
     @Override
     public void onMessageReceived(String from, String message) {
 
+            if (selectedUser == null || !selectedUser.equals(from)) {
+                JButton friendButton = friendButtons.get(from);
+                if (friendButton != null) {
+                    String text = friendButton.getText();
+                    int unreadMessages = Integer.parseInt(text.split(" ")[1]);
+                    unreadMessages++;
+                    friendButton.setText(from + " " + unreadMessages);
+                }
+            }
 
             messagePanel.add(createChatMessageComponent(from, message));
             messagePanel.revalidate();
             messagePanel.repaint();
 
-            messageScrollPane.getVerticalScrollBar().setValue(messageScrollPane.getVerticalScrollBar().getMaximum());
 
+            SwingUtilities.invokeLater(() -> messageScrollPane.getVerticalScrollBar().setValue(messageScrollPane.getVerticalScrollBar().getMaximum()));
     }
 
 
     @Override
     public void onActiveUsersChanged(String[] activeUsers) {
+
 
     }
 
@@ -55,7 +66,7 @@ public class ClientChatGUI extends JFrame implements MessageListener {
     private JPanel messagePanel;
     JScrollPane messageScrollPane;
     private String selectedUser;
-
+    private HashMap<String,JButton> friendButtons;
 
     public ClientChatGUI(User user) {
         super("User: " + user.getUsername());
@@ -85,7 +96,7 @@ public class ClientChatGUI extends JFrame implements MessageListener {
 
     }
 
-
+    private List<String> activeFriend;
     private void startConnection() {
         new Thread(() -> {
             try {
@@ -108,12 +119,39 @@ public class ClientChatGUI extends JFrame implements MessageListener {
                                     System.out.println(friend);
                                 }
                             } else if (serverMessage.startsWith("/active")) {
-                                String[] parts = serverMessage.split(":");
-                                System.out.println(parts[1] + " is online");
+                                    onActiveUsersChanged(serverMessage.split(":"));
+
                             } else if (serverMessage.startsWith("/exit")) {
-                                System.out.println(serverMessage.split(":")[1] + " has left the chat");
-                            } else {
-                                System.out.println(serverMessage);
+                                    onActiveUsersChanged(serverMessage.split(":"));
+
+                            } else if(serverMessage.startsWith("/private")) {
+                                String[] parts = serverMessage.split(" ", 3);
+                                if (parts.length >= 3) {
+                                    String from = parts[1];
+                                    String message = parts[2];
+                                    onMessageReceived(from, message);
+                                }
+
+                            }else if (serverMessage.startsWith("/friendAccepted")) {
+                                String[] parts = serverMessage.split(" ", 2);
+                                if (parts.length >= 2) {
+                                    String friend = parts[1];
+                                    friends.add(friend);
+                                    JButton userButton = new JButton(friend);
+                                    userButton.setFocusable(false);
+                                    userButton.setFont(new Font("Inter", Font.PLAIN, 16));
+                                    userButton.setBorder(Utilities.addPadding(10, 10, 10, 10));
+                                    userButton.setBackground(Utilities.SECONDARY_COLOR);
+                                    userButton.setForeground(Utilities.Text_COLOR);
+                                    userButton.addActionListener(e -> {
+                                        openFriendChat(friend, ActiveUsersPane);
+                                    });
+                                    friendButtons.put(friend, userButton);
+                                    ActiveUsersPane.add(userButton);
+                                    ActiveUsersPane.revalidate();
+                                    ActiveUsersPane.repaint();
+
+                                }
                             }
                         }
                     } catch (IOException e) {
@@ -176,6 +214,15 @@ public class ClientChatGUI extends JFrame implements MessageListener {
 
     }
 
+
+    private JList<String> friendRequestsList;
+
+    private JFrame frame;
+    private JPanel friendRequestsPanel;
+    private List<String> friendRequestsFromController;
+    private JButton acceptButton ;
+    private JButton rejectButton ;
+    private JPanel ActiveUsersPane;
     private void addConnectedUsersComponents() {
         connectedUsersPanel = new JPanel();
         connectedUsersPanel.setBorder(Utilities.addPadding(10, 10, 10, 10));
@@ -185,33 +232,162 @@ public class ClientChatGUI extends JFrame implements MessageListener {
 
 
         JButton addFriendButton = addFriendButton();
+        JButton friendRequestsButton = new JButton("Friend Requests");
+        friendRequestsButton.setFocusable(false);
+        friendRequestsButton.setFont(new Font("Inter", Font.PLAIN, 16));
+        friendRequestsButton.setBorder(Utilities.addPadding(10, 10, 10, 10));
 
+
+        friendRequestsButton.addActionListener(e -> {
+
+            if (frame == null) {
+                frame = new JFrame("Friend Requests");
+                frame.setSize(400, 400);
+                frame.setLocationRelativeTo(null);
+                frame.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+                frame.setVisible(true);
+                // on dispose set the frame to null
+                frame.addWindowListener(new WindowAdapter() {
+                    @Override
+                    public void windowClosed(WindowEvent e) {
+                        frame = null;
+
+                    }
+                });
+
+                friendRequestsPanel = new JPanel();
+                friendRequestsPanel.setLayout(new BoxLayout(friendRequestsPanel, BoxLayout.Y_AXIS));
+                friendRequestsPanel.setBackground(Utilities.SECONDARY_COLOR);
+                friendRequestsPanel.setBorder(Utilities.addPadding(10, 10, 10, 10));
+
+
+                friendRequestsFromController = FriendRequestController.getFriendRequests(user);
+
+                friendRequestsList = new JList<>(friendRequestsFromController.toArray(new String[0]));
+
+                friendRequestsList.addListSelectionListener(e1 -> {
+                    String selectedFriendRequest = friendRequestsList.getSelectedValue();
+                    System.out.println("Selected friend request: " + selectedFriendRequest);
+                });
+
+                friendRequestsPanel.add(friendRequestsList);
+
+                acceptButton = new JButton("Accept");
+                rejectButton = new JButton("Reject");
+
+
+                // TODO: implement the accept and reject buttons
+                acceptButton.addActionListener(e1 -> {
+                    String selectedFriendRequest = friendRequestsList.getSelectedValue();
+                    if (selectedFriendRequest != null) {
+                        User friend = UserController.getUserByUsername(selectedFriendRequest);
+                        FriendRequest friendRequest = FriendRequestController.getFriendRequest(friend, user);
+                        if (friendRequest != null) {
+                            FriendRequestController.acceptFriendRequest(friendRequest);
+                            JOptionPane.showMessageDialog(frame, "Friend request accepted");
+                            output.println("/friendAccepted "+ ":" + friend.getUsername());
+
+                            // add the friend to list of friends
+                                friends.add(friend.getUsername());
+                                JButton userButton = new JButton(friend.getUsername());
+                                userButton.setFocusable(false);
+                                userButton.setFont(new Font("Inter", Font.PLAIN, 16));
+                                userButton.setBorder(Utilities.addPadding(10, 10, 10, 10));
+                                userButton.setBackground(Utilities.SECONDARY_COLOR);
+                                userButton.setForeground(Utilities.Text_COLOR);
+                            userButton.addActionListener(e2 -> {
+                                openFriendChat(friend.getUsername(), ActiveUsersPane);
+                            });
+                            friendButtons.put(friend.getUsername(), userButton);
+                            ActiveUsersPane.add(userButton);
+                            ActiveUsersPane.revalidate();
+                            ActiveUsersPane.repaint();
+
+                            friendRequestsFromController.remove(selectedFriendRequest);
+
+                            friendRequestsList.setListData(friendRequestsFromController.toArray(new String[0]));
+
+
+
+
+                        }
+                    }
+                });
+
+                rejectButton.addActionListener(e1 -> {
+                    String selectedFriendRequest = friendRequestsList.getSelectedValue();
+                    if (selectedFriendRequest != null) {
+                        User friend = UserController.getUserByUsername(selectedFriendRequest);
+                        FriendRequest friendRequest = FriendRequestController.getFriendRequest(friend, user);
+                        if (friendRequest != null) {
+                            FriendRequestController.deleteFriendRequest(friendRequest);
+                            JOptionPane.showMessageDialog(frame, "Friend request rejected");
+                            DefaultListModel<String> model = (DefaultListModel<String>) friendRequestsList.getModel();
+                            int selectedIndex = friendRequestsList.getSelectedIndex();
+                            if (selectedIndex != -1) {
+                                model.remove(selectedIndex);
+                            }
+                        }
+                    }
+                });
+
+                // put them horizontally
+                JPanel buttonPanel = new JPanel();
+                buttonPanel.setLayout(new FlowLayout());
+                buttonPanel.setBackground(Utilities.SECONDARY_COLOR);
+                buttonPanel.add(Box.createRigidArea(new Dimension(10, 0)));
+                buttonPanel.setPreferredSize(new Dimension(400, 50));
+                buttonPanel.add(acceptButton);
+                buttonPanel.add(rejectButton);
+
+                friendRequestsPanel.add(buttonPanel);
+
+
+                frame.add(friendRequestsPanel);
+
+
+            }
+
+
+
+        });
+
+
+
+        friendRequestsButton.setBackground(Utilities.SECONDARY_COLOR);
+        friendRequestsButton.setForeground(Utilities.Text_COLOR);
+
+        connectedUsersPanel.add(friendRequestsButton);
+        connectedUsersPanel.add(Box.createRigidArea(new Dimension(0, 20)));
         connectedUsersPanel.add(addFriendButton);
+
 
         JLabel connectedUsersLabel = new JLabel("Connected Users");
         connectedUsersLabel.setFont(new Font("Inter", Font.BOLD, 18));
         connectedUsersLabel.setForeground(Utilities.Text_COLOR);
         connectedUsersPanel.add(connectedUsersLabel);
 
-        while (friends == null || friends.isEmpty()) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
 
-        JPanel ActiveUsersPane = new JPanel();
+
+
+
+        ActiveUsersPane = new JPanel();
         ActiveUsersPane.setLayout(new BoxLayout(ActiveUsersPane, BoxLayout.Y_AXIS));
         ActiveUsersPane.setBackground(Utilities.SECONDARY_COLOR);
 
 
-
+        friendButtons = new HashMap<>();
         for (String user : friends) {
 
             int unreadMessages = MessageController.getUnreadMessagesCount(this.user.getUsername(), user);
 
             JButton userButton = getFriendButtons(user, unreadMessages, ActiveUsersPane);
+            friendButtons.put(user, userButton);
             ActiveUsersPane.add(userButton);
         }
 
@@ -235,31 +411,33 @@ public class ClientChatGUI extends JFrame implements MessageListener {
         userButton.setBackground(Utilities.SECONDARY_COLOR);
         userButton.setForeground(Utilities.Text_COLOR);
         userButton.addActionListener(e -> {
-            selectedUser = user;
-            System.out.println("Selected user: " + selectedUser);
-            // make the selected user button look different
-            for (Component component : ActiveUsersPane.getComponents()) {
-                if (component instanceof JButton) {
-                    JButton button = (JButton) component;
-                    if (button.getText().equals(selectedUser)) {
-                        button.setBackground(Utilities.PRIMARYP_COLOR);
-                    } else {
-                        button.setBackground(Utilities.SECONDARY_COLOR);
-                    }
-                }
-            }
-            // when a user is selected, display the chat messages between the current user and the selected user
-            messagePanel.removeAll();
-            messagePanel.revalidate();
-            messagePanel.repaint();
-            messagePanel.repaint();
-
-            getSelectedUserMessages(selectedUser);
-
-
+            openFriendChat(user, ActiveUsersPane);
 
         });
         return userButton;
+    }
+
+    private void openFriendChat(String user, JPanel ActiveUsersPane) {
+        selectedUser = user;
+        System.out.println("Selected user: " + selectedUser);
+        // make the selected user button look different
+        for (Component component : ActiveUsersPane.getComponents()) {
+            if (component instanceof JButton) {
+                JButton button = (JButton) component;
+                if (button.getText().equals(selectedUser)) {
+                    button.setBackground(Utilities.PRIMARYP_COLOR);
+                } else {
+                    button.setBackground(Utilities.SECONDARY_COLOR);
+                }
+            }
+        }
+        // when a user is selected, display the chat messages between the current user and the selected user
+        messagePanel.removeAll();
+        messagePanel.revalidate();
+        messagePanel.repaint();
+        messagePanel.repaint();
+
+        getSelectedUserMessages(selectedUser);
     }
 
     private void getSelectedUserMessages(String selectedUser) {
@@ -288,8 +466,31 @@ public class ClientChatGUI extends JFrame implements MessageListener {
         addFriendButton.setForeground(Utilities.Text_COLOR);
         addFriendButton.addActionListener(e -> {
             String friendName = JOptionPane.showInputDialog(ClientChatGUI.this, "Enter the username of the friend you want to add");
+            if (Objects.equals(friendName, user.getUsername()))
+            {
+                JOptionPane.showMessageDialog(ClientChatGUI.this, "You cannot add yourself as a friend");
+            }
+            else
             if (friendName != null && !friendName.isEmpty()) {
-                JOptionPane.showMessageDialog(ClientChatGUI.this, "Friend added successfully");
+                if (friends.contains(friendName)) {
+                    JOptionPane.showMessageDialog(ClientChatGUI.this, "You are already friends with " + friendName);
+                    return;
+                }
+                User friend = UserController.getUserByUsername(friendName);
+                if (friend == null) {
+                    JOptionPane.showMessageDialog(ClientChatGUI.this, "User not found");
+                }
+                else {
+                    // add the friend to the current user's list of friends
+                    try {
+                        FriendRequestController.sendFriendRequest(new FriendRequest(user, friend));
+                        JOptionPane.showMessageDialog(ClientChatGUI.this, "Friend request sent to " + friendName);
+                    }catch (Exception ex) {
+                        if (ex.getMessage().equals("Friend request already sent")) {
+                            JOptionPane.showMessageDialog(ClientChatGUI.this, "Friend request already sent to " + friendName);
+                        }
+                    }
+                }
             }
         });
         return addFriendButton;

@@ -51,16 +51,13 @@ public class ChatServer {
         activeClients.remove(name);
         UserController.setUserStatus(name, false);
     }
+
     static void sendPrivateMessage(String recipient, String message, String sender) {
         ClientHandler recipientHandler = activeClients.get(recipient);
         if (recipientHandler != null) {
-            recipientHandler.sendMessage( sender + " : " + message);
-        } else {
-            ClientHandler senderHandler = activeClients.get(sender);
-            if (senderHandler != null) {
-                senderHandler.sendMessage("User " + recipient + " is not available.");
-            }
+            recipientHandler.sendMessage("/private " + sender + " " + message);
         }
+
     }
 
 }
@@ -87,27 +84,28 @@ class ClientHandler implements Runnable {
 
 
             clientName = input.readLine();
-
-
-            ConcurrentHashMap<String,Boolean> friends = UserController.getFriends(clientName);
-
-            for (String friend : friends.keySet()) {
-
-                ClientHandler friendHandler = ChatServer.activeClients.get(friend);
-                if (friendHandler != null) {
-                    friendHandler.sendMessage("/active" + " : " + clientName );
-                }
-
+            ConcurrentHashMap<String, Boolean> friends = null;
+            try {
+                     friends = UserController.getFriends(clientName);
+            }catch (Exception e){
+                e.printStackTrace();
             }
+            if ( friends != null) {
+                for (String friend : friends.keySet()) {
 
-            clientName = clientName;
+                    ClientHandler friendHandler = ChatServer.activeClients.get(friend);
+                    if (friendHandler != null) {
+                        friendHandler.sendMessage("/active" + " : " + clientName);
+                    }
+
+                }
+            }
 
             if (clientName != null) {
 
                 ChatServer.addClient(clientName, this);
-                ChatServer.broadcastMessage(clientName + " has joined the chat!", clientName);
+//                ChatServer.broadcastMessage(clientName + " has joined the chat!", clientName);
                 System.out.println(clientName + " joined the chat.");
-
 
 
                 // Read messages from this client and process them
@@ -136,16 +134,27 @@ class ClientHandler implements Runnable {
                             output.println("Invalid command. Use /msg <recipient> <message>");
                         }
                     }else if (message.startsWith("/friends")){
-
-                            ConcurrentHashMap<String,Boolean> friendUser = UserController.getFriends(clientName);
+                    // todo: update the friend list when a new friend is added
+                        ConcurrentHashMap<String, Boolean> friendUser = null;
+                        try {
+                             friendUser = UserController.getFriends(clientName);
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
+                        if (friendUser != null) {
                             for (String friend : friendUser.keySet()) {
                                 output.println("/friends" + " " + friend + " " + friendUser.get(friend));
                             }
+                        }
 
-
-
-
-                    } else {
+                    } else if(message.startsWith("/friendAccepted")){
+                            String[] parts = message.split(":", 2);
+                            if (parts.length >= 2) {
+                                String friend = parts[1];
+                                ChatServer.activeClients.get(friend).sendMessage("/friendAccepted" + " " + clientName);
+                            }
+                    }
+                    else {
                         // Broadcast to all clients
 
                         ChatServer.broadcastMessage(clientName + ": " + message, clientName);
@@ -158,6 +167,7 @@ class ClientHandler implements Runnable {
             try {
 
                 ConcurrentHashMap<String,Boolean> friends = UserController.getFriends(clientName);
+                assert friends != null;
                 for (String friend : friends.keySet()) {
                     ClientHandler friendHandler = ChatServer.activeClients.get(friend);
                     if (friendHandler != null) {
@@ -165,22 +175,23 @@ class ClientHandler implements Runnable {
                     }
                 }
                 ChatServer.removeClient(clientName);
-                ChatServer.broadcastMessage(clientName + " has left the chat.", clientName);
                 socket.close();
             } catch (IOException e) {
                 System.err.println("Error closing client socket: " + e.getMessage());
+            }catch (Exception e){
+                e.printStackTrace();
             }
             System.out.println(clientName + " disconnected.");
         }
 
     }
 
-    public void sendActiveFriends() {
-        ConcurrentHashMap<String, Boolean> friends = UserController.getFriends(clientName);
-        for (String friend : friends.keySet()) {
-            output.println("/friends" + " " + friend);
-        }
-    }
+//    public void sendActiveFriends() {
+//        ConcurrentHashMap<String, Boolean> friends = UserController.getFriends(clientName);
+//        for (String friend : friends.keySet()) {
+//            output.println("/friends" + " " + friend);
+//        }
+//    }
 
     public void sendMessage(String message) {
         output.println(message);

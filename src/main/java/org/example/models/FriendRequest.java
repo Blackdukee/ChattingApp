@@ -2,10 +2,10 @@ package org.example.models;
 
 import jakarta.persistence.*;
 
-enum Status {
-    ACCEPTED, REJECTED, PENDING
-}
+@Entity
+@Table(name = "friend_requests")
 public class FriendRequest {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -13,6 +13,7 @@ public class FriendRequest {
     private User sender;
     @ManyToOne
     private User recipient;
+
     @Enumerated(EnumType.STRING)
     private Status isAccepted;
 
@@ -21,6 +22,17 @@ public class FriendRequest {
         this.recipient = recipient;
         this.isAccepted = Status.PENDING;
     }
+
+    public FriendRequest() {
+
+    }
+
+    public FriendRequest(User sender, User recipient, Status isAccepted) {
+        this.sender = sender;
+        this.recipient = recipient;
+        this.isAccepted = isAccepted;
+    }
+
 
     public Long getId() {
         return id;

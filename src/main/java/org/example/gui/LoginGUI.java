@@ -4,13 +4,9 @@ import org.example.controller.UserController;
 import org.example.models.User;
 
 import javax.swing.*;
-import java.util.Arrays;
 
 public class LoginGUI extends JFrame {
-    private JPanel contentPane;
     private JTextField userName;
-    private JButton loginButton;
-    private JButton registerButton;
 
     public LoginGUI() {
         super("Login");
@@ -21,7 +17,7 @@ public class LoginGUI extends JFrame {
     }
 
     private void addGuiComponents(){
-        contentPane = new JPanel();
+        JPanel contentPane = new JPanel();
         contentPane.setLayout(new BoxLayout(contentPane, BoxLayout.Y_AXIS));
         contentPane.setBorder(Utilities.addPadding(10, 10, 10, 10));
         contentPane.setBackground(Utilities.PRIMARYP_COLOR);
@@ -54,17 +50,16 @@ public class LoginGUI extends JFrame {
             }
         });
 
-        loginButton = new JButton("Login");
+        JButton loginButton = new JButton("Login");
         loginButton.setFont(Utilities.FONT);
         contentPane.add(loginButton);
 
         loginButton.addActionListener(e -> {
-            // check if the user exists
 
             Login(password);
 
         });
-        registerButton = new JButton("Register");
+        JButton registerButton = new JButton("Register");
         registerButton.setFont(Utilities.FONT);
         contentPane.add(registerButton);
 
@@ -90,7 +85,6 @@ public class LoginGUI extends JFrame {
                     JOptionPane.ERROR_MESSAGE);
         }
 
-        // if the user does not exist, show an error message
     }
 
 

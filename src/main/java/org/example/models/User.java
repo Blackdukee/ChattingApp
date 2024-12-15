@@ -9,14 +9,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@jakarta.persistence.Table(name = "users")
+@Table(name = "users")
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "username", unique = true, nullable = false)
+    @Column( unique = true, nullable = false)
     private String username;
 
     private String password;
@@ -35,17 +35,19 @@ public class User {
     @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Message> messages;
 
-    @Column( nullable = false, columnDefinition = "boolean default false")
+    @Column(nullable = false, columnDefinition = "BIT DEFAULT 0")
     private boolean isOnline;
 
 
 
+    public User() {
+        this.friends = new ArrayList<>();
+    }
 
     public User(String username, String password) {
         this.username = username;
         this.password = password;
         this.friends = new ArrayList<>();
-
     }
 
     public void setActive(boolean active) {
@@ -54,9 +56,7 @@ public class User {
     public boolean isActive() {
         return isOnline;
     }
-    public User() {
-        this.friends = new ArrayList<>();
-    }
+
 
 
 

@@ -21,9 +21,13 @@ public class App {
                 LoginGUI loginGUI = new LoginGUI();
                 loginGUI.setVisible(true);
             }
-
+        // todo: show status
+            // todo : add logout
 
         });
+
+
+
 
 
 

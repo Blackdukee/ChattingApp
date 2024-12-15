@@ -5,10 +5,12 @@
     <session-factory>
         <!-- JDBC Database connection settings -->
         <property name="hibernate.connection.driver_class">com.microsoft.sqlserver.jdbc.SQLServerDriver</property>
-        <property name="hibernate.connection.url">jdbc:sqlserver://localhost:1433;databaseName=;encrypt=false</property>
-        <property name="hibernate.connection.username"></property>
-        <property name="hibernate.connection.password"></property>
+        <property name="hibernate.connection.url">jdbc:sqlserver://localhost:1433;databaseName=Chatting;encrypt=false</property>
+        <property name="hibernate.connection.username">sa</property>
+        <property name="hibernate.connection.password">Rot@2112002Ma</property>
 
+        <property name="hibernate.connection.useUnicode">true</property>
+        <property name="hibernate.connection.characterEncoding">UTF-8</property>
         <!-- JDBC connection pool settings -->
         <property name="hibernate.c3p0.min_size">5</property>
         <property name="hibernate.c3p0.max_size">20</property>
@@ -20,7 +22,7 @@
         <property name="hibernate.dialect">org.hibernate.dialect.SQLServerDialect</property>
 
         <!-- Echo all executed SQL to stdout -->
-        <property name="hibernate.show_sql">true</property>
+<!--        <property name="hibernate.show_sql">true</property>-->
 
         <!-- Drop and re-create the database schema on startup -->
         <property name="hibernate.hbm2ddl.auto">update</property>
@@ -28,6 +30,9 @@
         <!-- Specify annotated entity classes -->
         <mapping class="org.example.models.User"/>
         <mapping class="org.example.models.Message"/>
+        <mapping class="org.example.models.FriendRequest"/>
+
 
     </session-factory>
+
 </hibernate-configuration>
