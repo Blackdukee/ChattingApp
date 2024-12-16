@@ -154,6 +154,13 @@ class ClientHandler implements Runnable {
                                 ChatServer.activeClients.get(friend).sendMessage("/friendAccepted" + " " + clientName);
                             }
                     }
+                    else if (message.startsWith("/deleteFriend")){
+                        String[] parts = message.split(":", 2);
+                        if (parts.length >= 2) {
+                            String friend = parts[1];
+                            ChatServer.activeClients.get(friend).sendMessage("/deleteFriend" + ":" + clientName);
+                        }
+                    }
                     else {
                         // Broadcast to all clients
 

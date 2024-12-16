@@ -1,4 +1,5 @@
 package org.example.gui;
+import org.example.controller.FriendController;
 import org.example.controller.FriendRequestController;
 import org.example.controller.MessageController;
 import org.example.controller.UserController;
@@ -55,7 +56,14 @@ public class ClientChatGUI extends JFrame implements MessageListener {
 
 
     @Override
-    public void onActiveUsersChanged(String[] activeUsers) {
+    public void onActiveUsersChanged(String activeUser, boolean isActive) {
+
+        if (selectedUser == null) {
+            return;
+        }
+        if (selectedUser.equals(activeUser.trim())){
+            updateActiveUsers(chatPanel , isActive);
+        }
 
 
     }
@@ -119,10 +127,10 @@ public class ClientChatGUI extends JFrame implements MessageListener {
                                     System.out.println(friend);
                                 }
                             } else if (serverMessage.startsWith("/active")) {
-                                    onActiveUsersChanged(serverMessage.split(":"));
+                                    onActiveUsersChanged(serverMessage.split(":")[1], true );
 
                             } else if (serverMessage.startsWith("/exit")) {
-                                    onActiveUsersChanged(serverMessage.split(":"));
+                                    onActiveUsersChanged(serverMessage.split(":")[1], false);
 
                             } else if(serverMessage.startsWith("/private")) {
                                 String[] parts = serverMessage.split(" ", 3);
@@ -152,6 +160,18 @@ public class ClientChatGUI extends JFrame implements MessageListener {
                                     ActiveUsersPane.repaint();
 
                                 }
+                            }else if (serverMessage.startsWith("/deleteFriend")) {
+                                String[] parts = serverMessage.split(":", 2);
+                                if (parts.length >= 2) {
+                                    String friend = parts[1];
+                                    friends.remove(friend);
+                                    JButton friendButton = friendButtons.get(friend);
+                                    if (friendButton != null) {
+                                        ActiveUsersPane.remove(friendButton);
+                                        ActiveUsersPane.revalidate();
+                                        ActiveUsersPane.repaint();
+                                    }
+                                }
                             }
                         }
                     } catch (IOException e) {
@@ -160,18 +180,6 @@ public class ClientChatGUI extends JFrame implements MessageListener {
                 });
                 listenerThread.start();
 
-                // Send messages to the server
-//                try (Scanner scanner = new Scanner(System.in)) {
-//                    while (true) {
-//                        String userMessage = scanner.nextLine();
-//                        output.println(userMessage);
-//
-//                        if (userMessage.equalsIgnoreCase("exit")) {
-//                            System.out.println("Disconnected from the server.");
-//                            break;
-//                        }
-//                    }
-//                }
             } catch (IOException e) {
                 System.err.println("Error connecting to server: " + e.getMessage());
             }
@@ -231,7 +239,45 @@ public class ClientChatGUI extends JFrame implements MessageListener {
         connectedUsersPanel.setPreferredSize(new Dimension(200, getHeight()));
 
 
+
         JButton addFriendButton = addFriendButton();
+
+        JButton logoutButton = getLogoutButton();
+
+        JButton deleteFriendButton = new JButton("Delete Friend");
+        deleteFriendButton.setFocusable(false);
+        deleteFriendButton.setFont(new Font("Inter", Font.PLAIN, 16));
+        deleteFriendButton.setBorder(Utilities.addPadding(10, 10, 10, 10));
+        deleteFriendButton.setBackground(Utilities.SECONDARY_COLOR);
+        deleteFriendButton.setForeground(Utilities.Text_COLOR);
+        deleteFriendButton.addActionListener(e -> {
+            String friendName = JOptionPane.showInputDialog(ClientChatGUI.this, "Enter the username of the friend you want to delete");
+            if (friendName != null && !friendName.isEmpty()) {
+                if (!friends.contains(friendName)) {
+                    JOptionPane.showMessageDialog(ClientChatGUI.this, "You are not friends with " + friendName);
+                    return;
+                }
+                User friend = UserController.getUserByUsername(friendName);
+                FriendController.deleteFriend(user, friend);
+                output.println("/deleteFriend" + ":" + friendName);
+                if (friend == null) {
+                    JOptionPane.showMessageDialog(ClientChatGUI.this, "User not found");
+                } else {
+                    // delete the friend from the current user's list of friends
+                    friends.remove(friendName);
+                    JButton friendButton = friendButtons.get(friendName);
+                    if (friendButton != null) {
+                        ActiveUsersPane.remove(friendButton);
+                        ActiveUsersPane.revalidate();
+                        ActiveUsersPane.repaint();
+                    }
+                    JOptionPane.showMessageDialog(ClientChatGUI.this, "Friend deleted");
+                }
+            }
+        });
+
+
+
         JButton friendRequestsButton = new JButton("Friend Requests");
         friendRequestsButton.setFocusable(false);
         friendRequestsButton.setFont(new Font("Inter", Font.PLAIN, 16));
@@ -356,13 +402,16 @@ public class ClientChatGUI extends JFrame implements MessageListener {
 
         friendRequestsButton.setBackground(Utilities.SECONDARY_COLOR);
         friendRequestsButton.setForeground(Utilities.Text_COLOR);
-
         connectedUsersPanel.add(friendRequestsButton);
         connectedUsersPanel.add(Box.createRigidArea(new Dimension(0, 20)));
         connectedUsersPanel.add(addFriendButton);
+        connectedUsersPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+        connectedUsersPanel.add(deleteFriendButton);
+        connectedUsersPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+        connectedUsersPanel.add(logoutButton);
 
 
-        JLabel connectedUsersLabel = new JLabel("Connected Users");
+        JLabel connectedUsersLabel = new JLabel("Friends");
         connectedUsersLabel.setFont(new Font("Inter", Font.BOLD, 18));
         connectedUsersLabel.setForeground(Utilities.Text_COLOR);
         connectedUsersPanel.add(connectedUsersLabel);
@@ -401,6 +450,28 @@ public class ClientChatGUI extends JFrame implements MessageListener {
 
     }
 
+    private JButton getLogoutButton() {
+        JButton logoutButton = new JButton("Logout");
+        logoutButton.setFocusable(false);
+        logoutButton.setFont(new Font("Inter", Font.PLAIN, 16));
+        logoutButton.setBorder(Utilities.addPadding(10, 10, 10, 10));
+        logoutButton.setBackground(Utilities.SECONDARY_COLOR);
+        logoutButton.setForeground(Utilities.Text_COLOR);
+        logoutButton.addActionListener(e -> {
+            int option = JOptionPane.showConfirmDialog(ClientChatGUI.this,
+                    "Are you sure you want to logout?",
+                    "Logout",
+                    JOptionPane.YES_NO_OPTION);
+            if (option == JOptionPane.YES_OPTION) {
+                closeConnection();
+                ClientChatGUI.this.dispose();
+                LoginGUI loginGUI = new LoginGUI();
+                loginGUI.setVisible(true);
+            }
+        });
+        return logoutButton;
+    }
+
     private JButton getFriendButtons(String user, int unreadMessages, JPanel ActiveUsersPane) {
         JButton userButton = new JButton(user + " " + unreadMessages);
         // add the number of unread messages
@@ -418,6 +489,9 @@ public class ClientChatGUI extends JFrame implements MessageListener {
     }
 
     private void openFriendChat(String user, JPanel ActiveUsersPane) {
+        if (user.equals(selectedUser)) {
+            return;
+        }
         selectedUser = user;
         System.out.println("Selected user: " + selectedUser);
         // make the selected user button look different
@@ -437,6 +511,7 @@ public class ClientChatGUI extends JFrame implements MessageListener {
         messagePanel.repaint();
         messagePanel.repaint();
 
+        getActiveUsers(chatPanel);
         getSelectedUserMessages(selectedUser);
     }
 
@@ -496,11 +571,16 @@ public class ClientChatGUI extends JFrame implements MessageListener {
         return addFriendButton;
     }
 
+    private JLabel isOnline ;
+
+    private JPanel chatPanel;
     private void addChatComponents() {
 
-        JPanel chatPanel = new JPanel();
+        chatPanel = new JPanel();
         chatPanel.setLayout(new BorderLayout());
         chatPanel.setBackground(Utilities.SECONDARY_COLOR);
+
+        getActiveUsers(chatPanel);
 
         messagePanel = new JPanel();
         messagePanel.setLayout(new BoxLayout(messagePanel, BoxLayout.Y_AXIS));
@@ -531,6 +611,65 @@ public class ClientChatGUI extends JFrame implements MessageListener {
         inputPanel.add(inputField, BorderLayout.CENTER);
         chatPanel.add(inputPanel, BorderLayout.SOUTH);
         add(chatPanel, BorderLayout.CENTER);
+    }
+
+    private void updateActiveUsers(JPanel chatPanel , boolean isActive) {
+        if (isActive) {
+            if (isOnline != null) {
+                isOnline.setText(selectedUser + " is online");
+                isOnline.setForeground(Color.GREEN);
+            }else {
+                isOnline = new JLabel(selectedUser + " is online");
+                isOnline.setFont(new Font("Inter", Font.BOLD, 18));
+                isOnline.setForeground(Color.GREEN);
+                chatPanel.add(isOnline, BorderLayout.NORTH);
+
+            }
+        }else {
+            if (isOnline != null) {
+                isOnline.setForeground(Color.RED);
+                isOnline.setText(selectedUser + " is offline");
+
+            }else {
+                isOnline = new JLabel(selectedUser + " is offline");
+                isOnline.setFont(new Font("Inter", Font.BOLD, 18));
+                isOnline.setForeground(Color.RED);
+                chatPanel.add(isOnline, BorderLayout.NORTH);
+
+            }
+        }
+
+
+    }
+
+    private void getActiveUsers(JPanel chatPanel) {
+        if (selectedUser != null) {
+
+            if(UserController.getUserByUsername(selectedUser).isActive()) {
+                if (isOnline != null) {
+                    isOnline.setText(selectedUser + " is online");
+                }else {
+                    isOnline = new JLabel(selectedUser + " is online");
+                    isOnline.setFont(new Font("Inter", Font.BOLD, 18));
+                    isOnline.setForeground(Color.GREEN);
+                    chatPanel.add(isOnline, BorderLayout.NORTH);
+
+                }
+
+            }else {
+                if (isOnline != null) {
+                    isOnline.setText(selectedUser + " is offline");
+                    }else {
+                    isOnline = new JLabel(selectedUser + " is offline");
+                    isOnline.setFont(new Font("Inter", Font.BOLD, 18));
+                    isOnline.setForeground(Color.RED);
+                    chatPanel.add(isOnline, BorderLayout.NORTH);
+
+                }
+
+            }
+
+        }
     }
 
     private JTextField massageField(JPanel inputPanel) {
