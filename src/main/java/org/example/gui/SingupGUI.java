@@ -97,12 +97,6 @@ public class SingupGUI extends JFrame {
 
         add(panel, BorderLayout.CENTER);
 
-        signupButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                handleSignup();
-            }
-        });
     }
 
     /**
