@@ -100,7 +100,7 @@ public class User {
 
     public List<User> getFriends() {
         if (friends == null) {
-            friends = List.of();
+            friends = new ArrayList<>();
         }
         return  friends;
 

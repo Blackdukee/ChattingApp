@@ -62,19 +62,20 @@ public class FriendController extends UserController {
      * @param user   the user initiating the friend removal
      * @param friend the user to be removed as a friend
      */
-    public static void deleteFriend(User user, User friend) {
+    public static void deleteFriend(long userId, long friendId) {
         Transaction transaction = null;
         Session session = null;
         try {
             session = HibernateUtil.getSessionFactory().openSession();
             transaction = session.beginTransaction();
-
+                
+            User user = session.get(User.class, userId);
+            User friend = session.get(User.class, friendId);
+            MessageController.deleteMessages(userId, friendId);
             user.getFriends().remove(friend);
             friend.getFriends().remove(user);
-
-            updateUser(user);
-            updateUser(friend);
-
+            System.out.println(user.getFriends().toString());
+            System.out.println(friend.getFriends().toString());
             transaction.commit();
 
         } catch (Exception e) {

@@ -46,16 +46,7 @@ public class ClientChatGUI extends JFrame implements MessageListener {
     @Override
     public void onMessageReceived(String from, String message) {
 
-            if (selectedUser == null || !selectedUser.equals(from)) {
-                JButton friendButton = friendButtons.get(from);
-                if (friendButton != null) {
-                    String text = friendButton.getText();
-                    int unreadMessages = Integer.parseInt(text.split(" ")[1]);
-                    unreadMessages++;
-                    friendButton.setText(from + " " + unreadMessages);
-                }
-            }
-
+        
             messagePanel.add(createChatMessageComponent(from, message));
             messagePanel.revalidate();
             messagePanel.repaint();
@@ -192,6 +183,14 @@ public class ClientChatGUI extends JFrame implements MessageListener {
                                         ActiveUsersPane.remove(friendButton);
                                         ActiveUsersPane.revalidate();
                                         ActiveUsersPane.repaint();
+                                        // reset all compenents in chatPanel
+                                        messagePanel.removeAll();
+                                        messagePanel.revalidate();
+                                        messagePanel.repaint();
+                                        messagePanel.repaint();
+                                        selectedUser = null;
+                                        updateActiveUsers(chatPanel, false);
+                                        
                                     }
                                 }
                             }
@@ -295,8 +294,15 @@ public class ClientChatGUI extends JFrame implements MessageListener {
                     return;
                 }
                 User friend = UserController.getUserByUsername(friendName);
-                FriendController.deleteFriend(user, friend);
+                FriendController.deleteFriend(user.getId(), friend.getId());
                 output.println("/deleteFriend" + ":" + friendName);
+                messagePanel.removeAll();
+                messagePanel.revalidate();
+                messagePanel.repaint();
+                messagePanel.repaint();
+                selectedUser = null;
+                updateActiveUsers(chatPanel, false);
+                
                 if (friend == null) {
                     JOptionPane.showMessageDialog(ClientChatGUI.this, "User not found");
                 } else {
@@ -607,9 +613,10 @@ public class ClientChatGUI extends JFrame implements MessageListener {
         addFriendButton.setForeground(Utilities.Text_COLOR);
         addFriendButton.addActionListener(e -> {
             String friendName = JOptionPane.showInputDialog(ClientChatGUI.this, "Enter the username of the friend you want to add");
-            if (Objects.equals(friendName, user.getUsername()))
-            {
+            if (friendName.equalsIgnoreCase(user.getUsername()) ) 
+            {   
                 JOptionPane.showMessageDialog(ClientChatGUI.this, "You cannot add yourself as a friend");
+                return ;
             }
             else
             if (friendName != null && !friendName.isEmpty()) {
@@ -692,9 +699,21 @@ public class ClientChatGUI extends JFrame implements MessageListener {
     private void updateActiveUsers(JPanel chatPanel , boolean isActive) {
         if (isActive) {
             if (isOnline != null) {
+               if (selectedUser == null){
+                    isOnline.setVisible(false);
+                    return;
+               }
+                if (!isOnline.isVisible())
+                    isOnline.setVisible(true);
                 isOnline.setText(selectedUser + " is online");
                 isOnline.setForeground(Color.GREEN);
             }else {
+                if (selectedUser == null){
+                    isOnline.setVisible(false);
+                    return;
+               }
+                if (!isOnline.isVisible())
+                    isOnline.setVisible(true);
                 isOnline = new JLabel(selectedUser + " is online");
                 isOnline.setFont(new Font("Inter", Font.BOLD, 18));
                 isOnline.setForeground(Color.GREEN);
@@ -703,10 +722,22 @@ public class ClientChatGUI extends JFrame implements MessageListener {
             }
         }else {
             if (isOnline != null) {
+                if (selectedUser == null){
+                    isOnline.setVisible(false);
+                    return;
+               }
+                if (!isOnline.isVisible())
+                    isOnline.setVisible(true);
                 isOnline.setForeground(Color.RED);
                 isOnline.setText(selectedUser + " is offline");
 
             }else {
+                if (selectedUser == null){
+                    isOnline.setVisible(false);
+                    return;
+               }
+                if (!isOnline.isVisible())
+                    isOnline.setVisible(true);
                 isOnline = new JLabel(selectedUser + " is offline");
                 isOnline.setFont(new Font("Inter", Font.BOLD, 18));
                 isOnline.setForeground(Color.RED);

@@ -152,4 +152,40 @@ public class MessageController {
             session.close();
         }
     }
+    /**
+    * Deletes all messages between two users.
+    *   
+    * @param sender the ID of the sender
+    * @param recipient the ID of the recipient
+    */
+    public static void deleteMessages(long sender, long recipient) {
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            transaction = session.beginTransaction();
+
+            List<Message> messages = session.createQuery("from Message where sender.id = :sender and recipient.id = :recipient or sender.id = :recipient and recipient.id = :sender", Message.class)
+                    .setParameter("sender", sender)
+                    .setParameter("recipient", recipient)
+                    .getResultList();
+            List<Message> messages2 = session.createQuery("from Message where sender.id = :recipient and recipient.id = :sender", Message.class)
+                    .setParameter("sender", sender)
+                    .setParameter("recipient", recipient)
+                    .getResultList();
+
+            messages.addAll(messages2);
+
+            for (Message message : messages) {
+                session.remove(message);
+            }
+
+            transaction.commit();
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            e.printStackTrace();
+        } finally {
+            session.close();
+        }
+    }
 }

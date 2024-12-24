@@ -6,8 +6,7 @@ import org.example.controller.UserController;
 import org.example.models.User;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+
 import java.util.regex.Pattern;
 
 /**
@@ -78,11 +77,8 @@ public class SingupGUI extends JFrame {
         goBackButton = new JButton("Go Back");
         signupButton = new JButton("Signup");
 
-        signupButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
+        signupButton.addActionListener( e -> {
                 handleSignup();
-            }
         });
 
         goBackButton.addActionListener(e -> {
@@ -97,12 +93,7 @@ public class SingupGUI extends JFrame {
 
         add(panel, BorderLayout.CENTER);
 
-        signupButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                handleSignup();
-            }
-        });
+     
     }
 
     /**
@@ -153,5 +144,7 @@ public class SingupGUI extends JFrame {
         JOptionPane.showMessageDialog(this, "User created successfully", "Success", JOptionPane.INFORMATION_MESSAGE);
         dispose();
         new LoginGUI().setVisible(true);
+        
+        
     }
 }

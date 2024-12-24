@@ -123,6 +123,7 @@ class ClientHandler implements Runnable {
             output = new PrintWriter(socket.getOutputStream(), true);
 
             clientName = input.readLine();
+            // send the active status to the client's friends
             ConcurrentHashMap<String, Boolean> friends = null;
             try {
                 friends = UserController.getFriends(clientName);
@@ -189,7 +190,8 @@ class ClientHandler implements Runnable {
                         String[] parts = message.split(":", 2);
                         if (parts.length >= 2) {
                             String friend = parts[1];
-                            ChatServer.activeClients.get(friend).sendMessage("/deleteFriend" + ":" + clientName);
+                            if(ChatServer.activeClients.get(friend) != null ) 
+                                ChatServer.activeClients.get(friend).sendMessage("/deleteFriend" + ":" + clientName);
                         }
                     } else {
                         // Broadcast to all clients
