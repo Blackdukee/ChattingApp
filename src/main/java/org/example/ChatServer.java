@@ -7,13 +7,21 @@ import org.example.models.User;
 
 import java.io.*;
 import java.net.*;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * ChatServer is the main server class for the chat application.
+ * It handles client connections, broadcasting messages, and managing active clients.
+ */
 public class ChatServer {
     private static final int PORT = 12345;
     protected static ConcurrentHashMap<String, ClientHandler> activeClients = new ConcurrentHashMap<>();
 
+    /**
+     * The main method to start the chat server.
+     *
+     * @param args command-line arguments
+     */
     public static void main(String[] args) {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Chat server started on port " + PORT);
@@ -23,17 +31,20 @@ public class ChatServer {
                 System.out.println("New client connected: " + clientSocket.getInetAddress());
 
                 // Handle the client in a new thread
-
                 ClientHandler clientHandler = new ClientHandler(clientSocket);
-
                 new Thread(clientHandler).start();
-
             }
         } catch (IOException e) {
             System.err.println("Error starting the server: " + e.getMessage());
         }
     }
 
+    /**
+     * Broadcasts a message to all active clients except the sender.
+     *
+     * @param message the message to be broadcasted
+     * @param sender  the sender of the message
+     */
     static void broadcastMessage(String message, String sender) {
         for (ClientHandler client : activeClients.values()) {
             if (!client.getClientName().equals(sender)) {
@@ -42,36 +53,65 @@ public class ChatServer {
         }
     }
 
+    /**
+     * Adds a client to the active clients list and sets their status to active.
+     *
+     * @param name          the name of the client
+     * @param clientHandler the client handler for the client
+     */
     static void addClient(String name, ClientHandler clientHandler) {
         activeClients.put(name, clientHandler);
         UserController.setUserStatus(name, true);
     }
 
+    /**
+     * Removes a client from the active clients list and sets their status to inactive.
+     *
+     * @param name the name of the client
+     */
     static void removeClient(String name) {
         activeClients.remove(name);
         UserController.setUserStatus(name, false);
     }
 
+    /**
+     * Sends a private message to a specific recipient.
+     *
+     * @param recipient the recipient of the message
+     * @param message   the message to be sent
+     * @param sender    the sender of the message
+     */
     static void sendPrivateMessage(String recipient, String message, String sender) {
         ClientHandler recipientHandler = activeClients.get(recipient);
         if (recipientHandler != null) {
             recipientHandler.sendMessage("/private " + sender + " " + message);
         }
-
     }
-
 }
 
+/**
+ * ClientHandler handles the communication with a single client.
+ */
 class ClientHandler implements Runnable {
     private Socket socket;
     private BufferedReader input;
     private PrintWriter output;
     private String clientName;
 
+    /**
+     * Constructs a new ClientHandler for the specified socket.
+     *
+     * @param socket the socket for the client connection
+     */
     public ClientHandler(Socket socket) {
         this.socket = socket;
     }
 
+    /**
+     * Returns the name of the client.
+     *
+     * @return the name of the client
+     */
     public String getClientName() {
         return clientName;
     }
@@ -82,31 +122,25 @@ class ClientHandler implements Runnable {
             input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             output = new PrintWriter(socket.getOutputStream(), true);
 
-
             clientName = input.readLine();
             ConcurrentHashMap<String, Boolean> friends = null;
             try {
-                     friends = UserController.getFriends(clientName);
-            }catch (Exception e){
+                friends = UserController.getFriends(clientName);
+            } catch (Exception e) {
                 e.printStackTrace();
             }
-            if ( friends != null) {
+            if (friends != null) {
                 for (String friend : friends.keySet()) {
-
                     ClientHandler friendHandler = ChatServer.activeClients.get(friend);
                     if (friendHandler != null) {
                         friendHandler.sendMessage("/active" + " : " + clientName);
                     }
-
                 }
             }
 
             if (clientName != null) {
-
                 ChatServer.addClient(clientName, this);
-//                ChatServer.broadcastMessage(clientName + " has joined the chat!", clientName);
                 System.out.println(clientName + " joined the chat.");
-
 
                 // Read messages from this client and process them
                 String message;
@@ -129,16 +163,15 @@ class ClientHandler implements Runnable {
                             message1.setSender(sender);
                             message1.setRecipient(recipientUser);
                             MessageController.saveMessage(message1);
-
                         } else {
                             output.println("Invalid command. Use /msg <recipient> <message>");
                         }
-                    }else if (message.startsWith("/friends")){
-                    // todo: update the friend list when a new friend is added
+                    } else if (message.startsWith("/friends")) {
+                        // Update the friend list when a new friend is added
                         ConcurrentHashMap<String, Boolean> friendUser = null;
                         try {
-                             friendUser = UserController.getFriends(clientName);
-                        }catch (Exception e){
+                            friendUser = UserController.getFriends(clientName);
+                        } catch (Exception e) {
                             e.printStackTrace();
                         }
                         if (friendUser != null) {
@@ -146,24 +179,20 @@ class ClientHandler implements Runnable {
                                 output.println("/friends" + " " + friend + " " + friendUser.get(friend));
                             }
                         }
-
-                    } else if(message.startsWith("/friendAccepted")){
-                            String[] parts = message.split(":", 2);
-                            if (parts.length >= 2) {
-                                String friend = parts[1];
-                                ChatServer.activeClients.get(friend).sendMessage("/friendAccepted" + " " + clientName);
-                            }
-                    }
-                    else if (message.startsWith("/deleteFriend")){
+                    } else if (message.startsWith("/friendAccepted")) {
+                        String[] parts = message.split(":", 2);
+                        if (parts.length >= 2) {
+                            String friend = parts[1];
+                            ChatServer.activeClients.get(friend).sendMessage("/friendAccepted" + " " + clientName);
+                        }
+                    } else if (message.startsWith("/deleteFriend")) {
                         String[] parts = message.split(":", 2);
                         if (parts.length >= 2) {
                             String friend = parts[1];
                             ChatServer.activeClients.get(friend).sendMessage("/deleteFriend" + ":" + clientName);
                         }
-                    }
-                    else {
+                    } else {
                         // Broadcast to all clients
-
                         ChatServer.broadcastMessage(clientName + ": " + message, clientName);
                     }
                 }
@@ -172,34 +201,30 @@ class ClientHandler implements Runnable {
             System.err.println("Error handling client: " + e.getMessage());
         } finally {
             try {
-
-                ConcurrentHashMap<String,Boolean> friends = UserController.getFriends(clientName);
+                ConcurrentHashMap<String, Boolean> friends = UserController.getFriends(clientName);
                 assert friends != null;
                 for (String friend : friends.keySet()) {
                     ClientHandler friendHandler = ChatServer.activeClients.get(friend);
                     if (friendHandler != null) {
-                        friendHandler.sendMessage("/exit" + " : " + clientName );
+                        friendHandler.sendMessage("/exit" + " : " + clientName);
                     }
                 }
                 ChatServer.removeClient(clientName);
                 socket.close();
             } catch (IOException e) {
                 System.err.println("Error closing client socket: " + e.getMessage());
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             System.out.println(clientName + " disconnected.");
         }
-
     }
 
-//    public void sendActiveFriends() {
-//        ConcurrentHashMap<String, Boolean> friends = UserController.getFriends(clientName);
-//        for (String friend : friends.keySet()) {
-//            output.println("/friends" + " " + friend);
-//        }
-//    }
-
+    /**
+     * Sends a message to the client.
+     *
+     * @param message the message to be sent
+     */
     public void sendMessage(String message) {
         output.println(message);
     }

@@ -4,75 +4,100 @@ import org.example.controller.UserController;
 import org.example.models.User;
 
 import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
+/**
+ * LoginGUI is the main GUI class for the login screen of the chat application.
+ * It handles the user interface for logging in and navigating to the signup screen.
+ */
 public class LoginGUI extends JFrame {
     private JTextField userName;
+    private JPasswordField password;
 
+    /**
+     * Constructs a new LoginGUI.
+     */
     public LoginGUI() {
         super("Login");
-        setSize(400, 200);
+        setSize(300, 300);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        addGuiComponents();
+        initComponents();
+        applyTheme();
     }
 
-    private void addGuiComponents(){
-        JPanel contentPane = new JPanel();
-        contentPane.setLayout(new BoxLayout(contentPane, BoxLayout.Y_AXIS));
-        contentPane.setBorder(Utilities.addPadding(10, 10, 10, 10));
-        contentPane.setBackground(Utilities.PRIMARYP_COLOR);
+    /**
+     * Initializes the GUI components for the login screen.
+     */
+    private void initComponents() {
+        // Initialize fields
+        userName = new JTextField(15);
+        password = new JPasswordField(15);
 
-        JLabel userNameLabel = new JLabel("Enter your username");
-        userNameLabel.setForeground(Utilities.Text_COLOR);
-        userNameLabel.setFont(Utilities.FONT);
-        contentPane.add(userNameLabel);
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 5, 5, 5);
 
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        panel.add(new JLabel("Username:"), gbc);
 
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        panel.add(userName, gbc);
 
-        userName = new JTextField();
-        userName.setFont(Utilities.FONT);
-        contentPane.add(userName);
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        panel.add(new JLabel("Password:"), gbc);
 
-        JLabel passwordLabel = new JLabel("Enter your password");
-        passwordLabel.setForeground(Utilities.Text_COLOR);
-        passwordLabel.setFont(Utilities.FONT);
-        contentPane.add(passwordLabel);
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        panel.add(password, gbc);
 
-        JPasswordField password = new JPasswordField();
-        password.setFont(Utilities.FONT);
-        contentPane.add(password);
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 2;
 
-        password.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent evt) {
-                if(evt.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER){
-                    Login(password);
-                }
+        JButton loginButton = new JButton("Login");
+        JButton signupButton = new JButton("Signup");
+
+        loginButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                handleLogin();
             }
         });
 
-        JButton loginButton = new JButton("Login");
-        loginButton.setFont(Utilities.FONT);
-        contentPane.add(loginButton);
-
-        loginButton.addActionListener(e -> {
-
-            Login(password);
-
+        signupButton.addActionListener(e -> {
+            dispose();
+            new SingupGUI().setVisible(true);
         });
-        JButton registerButton = new JButton("Register");
-        registerButton.setFont(Utilities.FONT);
-        contentPane.add(registerButton);
 
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 2));
+        buttonPanel.add(loginButton);
+        buttonPanel.add(signupButton);
+        panel.add(buttonPanel, gbc);
 
-
-        add(contentPane);
+        add(panel, BorderLayout.CENTER);
     }
 
-    private void Login(JPasswordField password) {
+    /**
+     * Applies the theme to the login screen.
+     */
+    private void applyTheme() {
+        Utilities.applyTheme(getContentPane());
+    }
+
+    /**
+     * Handles the login process by validating the username and password.
+     */
+    private void handleLogin() {
         String userName = this.userName.getText().trim();
         String passwordString = new String(password.getPassword());
         User user = UserController.Loing(userName, passwordString);
-
 
         if (user != null) {
             ClientChatGUI clientChatGUI = new ClientChatGUI(user);
@@ -84,8 +109,6 @@ public class LoginGUI extends JFrame {
                     "Login error",
                     JOptionPane.ERROR_MESSAGE);
         }
-
     }
-
 
 }

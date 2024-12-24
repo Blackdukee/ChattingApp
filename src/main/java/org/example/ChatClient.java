@@ -5,12 +5,21 @@ import java.net.*;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * ChatClient is the main client class for the chat application.
+ * It handles the connection to the chat server and user interactions.
+ */
 public class ChatClient {
 
     private static final String SERVER_ADDRESS = "127.0.0.1";
     private static final int SERVER_PORT = 12345;
     private static final List<String> friends = new java.util.ArrayList<>(List.of());
 
+    /**
+     * The main method to start the chat client.
+     *
+     * @param args command-line arguments
+     */
     public static void main(String[] args) {
 
         try (Socket socket = new Socket(SERVER_ADDRESS, SERVER_PORT);
@@ -21,7 +30,6 @@ public class ChatClient {
             output.println("user2");
             output.println("user2");
 
-
             Thread listenerThread = new Thread(() -> {
                 try {
                     String serverMessage;
@@ -29,16 +37,15 @@ public class ChatClient {
 
                     while ((serverMessage = input.readLine()) != null) {
 
-                        if (serverMessage.startsWith("/friends")){
+                        if (serverMessage.startsWith("/friends")) {
                             friends.add(serverMessage.split(" ")[1]);
 
-                        }else if (serverMessage.startsWith("/active")){
+                        } else if (serverMessage.startsWith("/active")) {
                             String[] parts = serverMessage.split(":");
                             System.out.println(parts[1] + " is online");
-                        } else if ( serverMessage.startsWith("/exit")){
+                        } else if (serverMessage.startsWith("/exit")) {
                             System.out.println(serverMessage.split(":")[1] + " has left the chat");
-                        }else {
-
+                        } else {
                             System.out.println(serverMessage);
                         }
                     }
@@ -48,13 +55,10 @@ public class ChatClient {
             });
             listenerThread.start();
 
-
-            // how to wait for the friends list to be populated
-            while (friends.isEmpty()){
+            // Wait for the friends list to be populated
+            while (friends.isEmpty()) {
                 Thread.sleep(1000);
             }
-
-
 
             // Send messages to the server
             System.out.println("Type your messages below:");
@@ -74,5 +78,4 @@ public class ChatClient {
             throw new RuntimeException(e);
         }
     }
-
 }

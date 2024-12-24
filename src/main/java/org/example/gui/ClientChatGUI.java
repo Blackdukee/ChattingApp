@@ -23,6 +23,10 @@ import java.net.Socket;
 import java.util.*;
 import java.util.List;
 
+/**
+ * ClientChatGUI is the main GUI class for the chat application.
+ * It handles the user interface for chatting, managing friends, and friend requests.
+ */
 public class ClientChatGUI extends JFrame implements MessageListener {
 
     private static final String SERVER_ADDRESS = "127.0.0.1";
@@ -33,6 +37,12 @@ public class ClientChatGUI extends JFrame implements MessageListener {
     private BufferedReader input;
     private PrintWriter output;
 
+    /**
+     * Handles the event when a new message is received.
+     *
+     * @param from    the sender of the message
+     * @param message the content of the message
+     */
     @Override
     public void onMessageReceived(String from, String message) {
 
@@ -54,7 +64,12 @@ public class ClientChatGUI extends JFrame implements MessageListener {
             SwingUtilities.invokeLater(() -> messageScrollPane.getVerticalScrollBar().setValue(messageScrollPane.getVerticalScrollBar().getMaximum()));
     }
 
-
+    /**
+     * Handles the event when the active status of a user changes.
+     *
+     * @param activeUser the user whose status changed
+     * @param isActive   the new active status
+     */
     @Override
     public void onActiveUsersChanged(String activeUser, boolean isActive) {
 
@@ -76,6 +91,11 @@ public class ClientChatGUI extends JFrame implements MessageListener {
     private String selectedUser;
     private HashMap<String,JButton> friendButtons;
 
+    /**
+     * Constructs a new ClientChatGUI for the specified user.
+     *
+     * @param user the user for whom the GUI is created
+     */
     public ClientChatGUI(User user) {
         super("User: " + user.getUsername());
         this.user = user;
@@ -104,7 +124,9 @@ public class ClientChatGUI extends JFrame implements MessageListener {
 
     }
 
-    private List<String> activeFriend;
+    /**
+     * Starts the connection to the chat server.
+     */
     private void startConnection() {
         new Thread(() -> {
             try {
@@ -187,6 +209,9 @@ public class ClientChatGUI extends JFrame implements MessageListener {
 
     }
 
+    /**
+     * Closes the connection to the chat server.
+     */
     private void closeConnection() {
         try {
             if (output != null) {
@@ -205,6 +230,13 @@ public class ClientChatGUI extends JFrame implements MessageListener {
             System.err.println("Error closing connection: " + e.getMessage());
         }
     }
+
+    /**
+     * Sends a private message to a specified user.
+     *
+     * @param to      the recipient of the message
+     * @param message the content of the message
+     */
     private void sendPrivateMessage(String to , String message) {
 
 
@@ -214,8 +246,9 @@ public class ClientChatGUI extends JFrame implements MessageListener {
 
     }
 
-
-
+    /**
+     * Adds the GUI components for the chat application.
+     */
     private void addGuiComponents() {
         addConnectedUsersComponents();
         addChatComponents();
@@ -231,6 +264,10 @@ public class ClientChatGUI extends JFrame implements MessageListener {
     private JButton acceptButton ;
     private JButton rejectButton ;
     private JPanel ActiveUsersPane;
+
+    /**
+     * Adds the GUI components for displaying connected users.
+     */
     private void addConnectedUsersComponents() {
         connectedUsersPanel = new JPanel();
         connectedUsersPanel.setBorder(Utilities.addPadding(10, 10, 10, 10));
@@ -450,6 +487,11 @@ public class ClientChatGUI extends JFrame implements MessageListener {
 
     }
 
+    /**
+     * Creates and returns the logout button.
+     *
+     * @return the logout button
+     */
     private JButton getLogoutButton() {
         JButton logoutButton = new JButton("Logout");
         logoutButton.setFocusable(false);
@@ -472,6 +514,14 @@ public class ClientChatGUI extends JFrame implements MessageListener {
         return logoutButton;
     }
 
+    /**
+     * Creates and returns a button for a friend with the specified unread messages count.
+     *
+     * @param user            the username of the friend
+     * @param unreadMessages  the count of unread messages
+     * @param ActiveUsersPane the panel containing active users
+     * @return the friend button
+     */
     private JButton getFriendButtons(String user, int unreadMessages, JPanel ActiveUsersPane) {
         JButton userButton = new JButton(user + " " + unreadMessages);
         // add the number of unread messages
@@ -488,6 +538,12 @@ public class ClientChatGUI extends JFrame implements MessageListener {
         return userButton;
     }
 
+    /**
+     * Opens the chat with the specified friend.
+     *
+     * @param user            the username of the friend
+     * @param ActiveUsersPane the panel containing active users
+     */
     private void openFriendChat(String user, JPanel ActiveUsersPane) {
         if (user.equals(selectedUser)) {
             return;
@@ -515,6 +571,11 @@ public class ClientChatGUI extends JFrame implements MessageListener {
         getSelectedUserMessages(selectedUser);
     }
 
+    /**
+     * Retrieves and displays the messages between the current user and the selected user.
+     *
+     * @param selectedUser the username of the selected user
+     */
     private void getSelectedUserMessages(String selectedUser) {
         // get the messages between the current user and the selected user
         long selectedFriendID = UserController.getUserByUsername(selectedUser) == null ? -1 : UserController.getUserByUsername(selectedUser).getId();
@@ -531,6 +592,11 @@ public class ClientChatGUI extends JFrame implements MessageListener {
 
     }
 
+    /**
+     * Creates and returns the add friend button.
+     *
+     * @return the add friend button
+     */
     private JButton addFriendButton() {
 
         JButton addFriendButton = new JButton("Add Friend");
@@ -574,6 +640,10 @@ public class ClientChatGUI extends JFrame implements MessageListener {
     private JLabel isOnline ;
 
     private JPanel chatPanel;
+
+    /**
+     * Adds the GUI components for the chat panel.
+     */
     private void addChatComponents() {
 
         chatPanel = new JPanel();
@@ -613,6 +683,12 @@ public class ClientChatGUI extends JFrame implements MessageListener {
         add(chatPanel, BorderLayout.CENTER);
     }
 
+    /**
+     * Updates the active status of the selected user in the chat panel.
+     *
+     * @param chatPanel the chat panel
+     * @param isActive  the active status of the selected user
+     */
     private void updateActiveUsers(JPanel chatPanel , boolean isActive) {
         if (isActive) {
             if (isOnline != null) {
@@ -642,6 +718,11 @@ public class ClientChatGUI extends JFrame implements MessageListener {
 
     }
 
+    /**
+     * Retrieves and displays the active status of the selected user in the chat panel.
+     *
+     * @param chatPanel the chat panel
+     */
     private void getActiveUsers(JPanel chatPanel) {
         if (selectedUser != null) {
 
@@ -672,6 +753,12 @@ public class ClientChatGUI extends JFrame implements MessageListener {
         }
     }
 
+    /**
+     * Creates and returns the input field for typing messages.
+     *
+     * @param inputPanel the input panel
+     * @return the input field
+     */
     private JTextField massageField(JPanel inputPanel) {
         JTextField inputField = new JTextField();
         inputField.addKeyListener(new KeyAdapter() {
@@ -706,7 +793,13 @@ public class ClientChatGUI extends JFrame implements MessageListener {
         return inputField;
     }
 
-
+    /**
+     * Creates and returns a chat message component for the specified sender and message content.
+     *
+     * @param from       the sender of the message
+     * @param msgContent the content of the message
+     * @return the chat message component
+     */
     private JPanel createChatMessageComponent(String from , String msgContent){
         JPanel messageComponent = new JPanel();
         messageComponent.setLayout(new BoxLayout(messageComponent, BoxLayout.Y_AXIS));
@@ -742,7 +835,12 @@ public class ClientChatGUI extends JFrame implements MessageListener {
         return messageComponent;
     }
 
-
+    /**
+     * Creates and returns a chat message component for the specified message.
+     *
+     * @param message the message
+     * @return the chat message component
+     */
     private JPanel createChatMessageComponent(Message message) {
         JPanel messageComponent = new JPanel();
         messageComponent.setLayout(new BoxLayout(messageComponent, BoxLayout.Y_AXIS));

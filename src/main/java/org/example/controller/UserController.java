@@ -4,16 +4,23 @@ import org.example.models.User;
 import org.example.util.HibernateUtil;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+/**
+ * UserController handles the operations related to user management
+ * such as signup, update, delete, and retrieving user information.
+ */
 public class UserController {
     private static Transaction transaction = null;
     private static Session session = null;
 
-    public static void saveUser(User user) {
+    /**
+     * Signs up a new user by saving their information to the database.
+     *
+     * @param user the user to be signed up
+     */
+    public static void signup(User user) {
         try {
             session = HibernateUtil.getSessionFactory().openSession();
             transaction = session.beginTransaction();
@@ -34,6 +41,11 @@ public class UserController {
         }
     }
 
+    /**
+     * Updates an existing user's information in the database.
+     *
+     * @param user the user to be updated
+     */
     public static void updateUser(User user) {
         try {
             session = HibernateUtil.getSessionFactory().openSession();
@@ -50,6 +62,11 @@ public class UserController {
         }
     }
 
+    /**
+     * Deletes a user from the database.
+     *
+     * @param user the user to be deleted
+     */
     public static void deleteUser(User user) {
         try {
             session = HibernateUtil.getSessionFactory().openSession();
@@ -66,8 +83,12 @@ public class UserController {
         }
     }
 
-
-
+    /**
+     * Retrieves a user by their username.
+     *
+     * @param username the username of the user to be retrieved
+     * @return the user if found, otherwise null
+     */
     public static User getUserByUsername(String username) {
         User user = null;
         try {
@@ -83,6 +104,13 @@ public class UserController {
         return user;
     }
 
+    /**
+     * Logs in a user by checking their username and password.
+     *
+     * @param username the username of the user
+     * @param password the password of the user
+     * @return the user if the credentials match, otherwise null
+     */
     public static User Loing(String username, String password) {
         User user = null;
         try {
@@ -100,18 +128,17 @@ public class UserController {
         return user;
     }
 
-
+    /**
+     * Retrieves a list of friends for a given user.
+     *
+     * @param username the username of the user whose friends are to be retrieved
+     * @return a ConcurrentHashMap of friends' usernames and their active status
+     * @throws Exception if the user is not found
+     */
     public static ConcurrentHashMap<String, Boolean> getFriends(String username) throws Exception {
         ConcurrentHashMap<String,Boolean> friends = null;
         try {
             session = HibernateUtil.getSessionFactory().openSession();
-//            User user = session.createQuery("from User where username = :username", User.class)
-//                    .setParameter("username", username)
-//                    .uniqueResult();
-            // get user by username
-
-            // how to get user by its attribute
-
             User user = session.createQuery("from User where username = :username", User.class)
                     .setParameter("username", username)
                     .uniqueResult();
@@ -140,7 +167,12 @@ public class UserController {
         return friends;
     }
 
-
+    /**
+     * Sets the active status of a user.
+     *
+     * @param username the username of the user
+     * @param status the active status to be set
+     */
     public static void setUserStatus(String username, boolean status) {
         try {
             session = HibernateUtil.getSessionFactory().openSession();
