@@ -39,19 +39,8 @@ public class ChatServer {
         }
     }
 
-    /**
-     * Broadcasts a message to all active clients except the sender.
-     *
-     * @param message the message to be broadcasted
-     * @param sender  the sender of the message
-     */
-    static void broadcastMessage(String message, String sender) {
-        for (ClientHandler client : activeClients.values()) {
-            if (!client.getClientName().equals(sender)) {
-                client.sendMessage(message);
-            }
-        }
-    }
+
+    
 
     /**
      * Adds a client to the active clients list and sets their status to active.
@@ -194,8 +183,8 @@ class ClientHandler implements Runnable {
                                 ChatServer.activeClients.get(friend).sendMessage("/deleteFriend" + ":" + clientName);
                         }
                     } else {
-                        // Broadcast to all clients
-                        ChatServer.broadcastMessage(clientName + ": " + message, clientName);
+                        // // Broadcast to all clients
+                        // ChatServer.broadcastMessage(clientName + ": " + message, clientName);
                     }
                 }
             }
